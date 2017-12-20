@@ -10,6 +10,12 @@
 #include "Adafruit_SSD1306.h"
 #include "DS1307.h"
 
+#define TIME_SCREEN_ON 7
+
+#define BOARDLED 13
+#define EXTERNLED 8
+#define BUTTONPRESS 2
+
 #define OLED_RESET 4
 
 #define DEBUG 1
@@ -23,10 +29,9 @@
 #define Wire_read() Wire.receive()
 #endif
 
-int boardLed = 13;
-int externLed = 8;
 Adafruit_SSD1306 display(OLED_RESET);
 
+int stayScreenOn=0;
 
 /** Fonction de conversion BCD -> decimal */
 byte bcd_to_decimal(byte bcd) {
@@ -110,6 +115,28 @@ void oled_night(){
   display.display();
 }
 
+void oled_initUp(int color){
+  for(int16_t i=0; i<display.width(); i++){
+    display.drawLine(i, 0, i, 7, color);
+    display.display();
+    //delay(1);
+  }
+}
+
+void oled_initDown1(int color){
+  for(int16_t i=display.height(); i>7; i--){
+    display.drawLine(0, i, display.width(), i, color);
+    display.display();
+    //delay(1);
+  }
+}
+void oled_initDown2(int color){
+  for(int16_t i=8; i<display.height(); i++){
+    display.drawLine(0, i, display.width(), i, color);
+    display.display();
+    //delay(1);
+  }
+}
 
 void oled_sunrise(void) {
   for (int16_t i=0; i<display.width()/2; i+=3) {
@@ -120,14 +147,20 @@ void oled_sunrise(void) {
   //delay(1000);
 }
 
+void screenOff(){
+  display.clearDisplay();
+  display.display();
+}
 
 /** Fonction setup() */
 void setup() {
-  pinMode(boardLed, OUTPUT);
-  pinMode(externLed, OUTPUT);
+  pinMode(BOARDLED, OUTPUT);
+  pinMode(EXTERNLED, OUTPUT);
+  pinMode(2,INPUT_PULLUP);
+
   /* Initialise le port série */
   if(DEBUG){
-    Serial.begin(115200);
+    Serial.begin(9600);
   }
   /* Initialise le port I2C */
   Wire.begin();
@@ -164,11 +197,19 @@ void setup() {
   // Since the buffer is intialized with an Adafruit splashscreen
   // internally, this will display the splashscreen.
   // Clear the buffer.
-  display.clearDisplay();
-  display.display();
+  screenOff();
 
-  blinkSequence(boardLed);
-  blinkSequence(externLed);
+  drawClockFace();
+  
+  oled_initUp(WHITE);
+  oled_initDown1(WHITE);
+  oled_initDown1(BLACK);
+  oled_initDown2(WHITE);
+  oled_initDown2(BLACK);
+  oled_initUp(BLACK);
+  
+  blinkSequence(BOARDLED);
+  blinkSequence(EXTERNLED);
 }
 
 /* Retourne l'heure et les minutes au format (100*Heures + Minutes) */
@@ -203,7 +244,7 @@ int isWakeUpAllowed(int dayOfWeek, int nowHour, int nowMinute){
   int strangeFormat=(100*nowHour)+nowMinute;
   Serial.println(strangeFormat);
 
-  if(strangeFormat > 1302){
+  if(strangeFormat > 1200){
     Serial.println(F("Il est trop tard pour allumer"));
     return 0;
   }else if(strangeFormat < wakeUpTimeByDay(dayOfWeek)){
@@ -217,41 +258,88 @@ int isWakeUpAllowed(int dayOfWeek, int nowHour, int nowMinute){
 
 }
 
-/** Fonction loop() */
-void loop() {
-  
-  /* Lit la date et heure courante */
+void drawClockFace(){
+  display.drawCircle(display.width()/2, ((display.height()-10)/2)+8, 12, WHITE);
+  display.display();
+  //delay(3000);
+}
+
+void main_action(){
+    /* Lit la date et heure courante */
   DateTime_t now;
   if (read_current_datetime(&now)) {
     if(DEBUG){
       Serial.println(F("L'horloge du module RTC n'est pas active !"));
     }
   }else{
-    /* Affiche la date et heure courante */
-      Serial.print(F("Date : "));
-      Serial.print(now.days);
-      Serial.print(F("/"));
-      Serial.print(now.months);
-      Serial.print(F("/"));
-      Serial.print(now.year + 2000);
-      Serial.print(F("  Heure : "));
-      Serial.print(now.hours);
-      Serial.print(F(":"));
-      Serial.print(now.minutes);
-      Serial.print(F(":"));
-      Serial.println(now.seconds);
-    if(isWakeUpAllowed(now.day_of_week, now.hours, now.minutes)){
-      //digitalWrite(boardLed, LOW);   // turn the LED on (HIGH is the voltage level)
-      digitalWrite(externLed, HIGH);   // turn the LED on (HIGH is the voltage level)
-      oled_sunrise();
-    }else{
-      //digitalWrite(boardLed, HIGH);    // turn the LED off by making the voltage LOW
-      digitalWrite(externLed, LOW);    // turn the LED off by making the voltage LOW
-      oled_night();
-    }
+      /* Affiche la date et heure courante */
+        Serial.print(F("Date : "));
+        Serial.print(now.days);
+        Serial.print(F("/"));
+        Serial.print(now.months);
+        Serial.print(F("/"));
+        Serial.print(now.year + 2000);
+        Serial.print(F("  Heure : "));
+        Serial.print(now.hours);
+        Serial.print(F(":"));
+        Serial.print(now.minutes);
+        Serial.print(F(":"));
+        Serial.println(now.seconds);
+      if(isWakeUpAllowed(now.day_of_week, now.hours, now.minutes)){
+        digitalWrite(EXTERNLED, HIGH);   // turn the LED on (HIGH is the voltage level)
+        oled_sunrise();
+      }else{
+        digitalWrite(EXTERNLED, LOW);    // turn the LED off by making the voltage LOW
+        oled_night();
+        drawClockFace();
+      }
   }
   
   
   /* Rafraichissement une fois par seconde */ 
-  delay(1000);
+  //delay(1000);  
+}
+
+
+/** Fonction loop() */
+void loop() {
+    int sensorValue = digitalRead(BUTTONPRESS);
+    if(DEBUG){
+      Serial.print(F("Button is "));
+    }
+    if (sensorValue == LOW) {
+      if(DEBUG){
+        Serial.print(F("Pressed"));
+      }
+      digitalWrite(BOARDLED, LOW);   // turn the LED on (HIGH is the voltage level)
+      main_action();
+      stayScreenOn = TIME_SCREEN_ON;
+      if(DEBUG){
+        Serial.print(F(" stayScreenON set to "));
+        Serial.println(TIME_SCREEN_ON);
+      }
+
+    } else {
+      if(DEBUG){
+        Serial.print(F("Released"));
+      }
+      digitalWrite(BOARDLED, HIGH);
+      if(stayScreenOn <= 0){
+        stayScreenOn = 0;
+        screenOff();
+      }else{
+        stayScreenOn--;
+        if(DEBUG){
+          Serial.print(F("  wait"));
+        }
+        delay(1000);
+        if(DEBUG){
+          Serial.println(F(" 1 sec"));
+        }
+      }
+    }
+    if(DEBUG){
+      Serial.print(F(" stayScreenON ="));
+      Serial.println(stayScreenOn);
+    }
 }
