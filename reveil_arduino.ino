@@ -14,7 +14,7 @@
 
 #define BOARDLED 13
 #define EXTERNLED 8
-#define BUTTONPRESS 2
+#define BUTTONPRESS 4
 
 #define OLED_RESET 4
 
@@ -199,7 +199,7 @@ void setup() {
   // Clear the buffer.
   screenOff();
 
-  drawClockFace();
+  //drawClockFace();
   
   oled_initUp(WHITE);
   oled_initDown1(WHITE);
@@ -291,7 +291,7 @@ void main_action(){
       }else{
         digitalWrite(EXTERNLED, LOW);    // turn the LED off by making the voltage LOW
         oled_night();
-        drawClockFace();
+        //drawClockFace();
       }
   }
   
