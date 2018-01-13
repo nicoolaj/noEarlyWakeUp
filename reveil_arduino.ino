@@ -11,6 +11,7 @@
 #include "DS1307.h"
 
 #define TIME_SCREEN_ON 7
+#define DISTANCE_MINIMUM 150 // distance in mm
 
 #define BOARDLED 13
 #define EXTERNLED 8
@@ -18,7 +19,17 @@
 
 #define OLED_RESET 4
 
-#define DEBUG 1
+#define DEBUG 0
+
+#define TRIGGER_PIN 2
+#define ECHO_PIN 3
+
+/* Constantes pour le timeout */
+const unsigned long MEASURE_TIMEOUT = 25000UL; // 25ms = ~8m à 340m/s
+
+/* Vitesse du son dans l'air en mm/us */
+const float SOUND_SPEED = 340.0 / 1000;
+
 
 /* Rétro-compatibilité avec Arduino 1.x et antérieur */
 #if ARDUINO >= 100
@@ -158,6 +169,11 @@ void setup() {
   pinMode(EXTERNLED, OUTPUT);
   pinMode(2,INPUT_PULLUP);
 
+  pinMode(TRIGGER_PIN, OUTPUT);
+  digitalWrite(TRIGGER_PIN, LOW); // La broche TRIGGER doit être à LOW au repos
+  pinMode(ECHO_PIN, INPUT);
+
+
   /* Initialise le port série */
   if(DEBUG){
     Serial.begin(9600);
@@ -244,7 +260,7 @@ int isWakeUpAllowed(int dayOfWeek, int nowHour, int nowMinute){
   int strangeFormat=(100*nowHour)+nowMinute;
   Serial.println(strangeFormat);
 
-  if(strangeFormat > 1200){
+  if(strangeFormat > 1900){
     Serial.println(F("Il est trop tard pour allumer"));
     return 0;
   }else if(strangeFormat < wakeUpTimeByDay(dayOfWeek)){
@@ -300,18 +316,49 @@ void main_action(){
   //delay(1000);  
 }
 
+int distance(){
+  int retour=1;
+  digitalWrite(TRIGGER_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIGGER_PIN, LOW);
+  long measure = pulseIn(ECHO_PIN, HIGH, MEASURE_TIMEOUT);
+  float distance_mm = measure / 2.0 * SOUND_SPEED;
+  
+  if(distance_mm>3){
+    if(distance_mm < DISTANCE_MINIMUM){
+      if(DEBUG){
+        Serial.print(F("Range is correct !"));
+      }
+      retour = 0;
+    }
+    if(DEBUG >=3 ){
+      Serial.print(F("Distance: "));
+      Serial.print(distance_mm / 10.0, 2);
+      Serial.println(F("cm, "));
+    }
+  }else{
+    if(DEBUG >=3 ){
+      Serial.print(F("NO ! : "));
+      Serial.println(distance_mm);    
+    }
+  }
+  /* Délai d'attente pour éviter d'afficher trop de résultats à la seconde */
+  //delay(500);
+  return(retour);
+}
 
 /** Fonction loop() */
 void loop() {
-    int sensorValue = digitalRead(BUTTONPRESS);
-    if(DEBUG){
+    int sensor1Value = distance();
+    int sensor2Value = digitalRead(BUTTONPRESS);
+    if(DEBUG  >=3 ){
       Serial.print(F("Button is "));
     }
-    if (sensorValue == LOW) {
+    if ((sensor2Value == LOW) || (sensor1Value == LOW)) {
       if(DEBUG){
         Serial.print(F("Pressed"));
+        digitalWrite(BOARDLED, LOW);   // turn the LED on (HIGH is the voltage level)
       }
-      digitalWrite(BOARDLED, LOW);   // turn the LED on (HIGH is the voltage level)
       main_action();
       stayScreenOn = TIME_SCREEN_ON;
       if(DEBUG){
@@ -322,18 +369,18 @@ void loop() {
     } else {
       if(DEBUG){
         Serial.print(F("Released"));
+        digitalWrite(BOARDLED, HIGH);
       }
-      digitalWrite(BOARDLED, HIGH);
       if(stayScreenOn <= 0){
         stayScreenOn = 0;
         screenOff();
       }else{
         stayScreenOn--;
-        if(DEBUG){
+        if(DEBUG >=3 ){
           Serial.print(F("  wait"));
         }
         delay(1000);
-        if(DEBUG){
+        if(DEBUG >=3 ){
           Serial.println(F(" 1 sec"));
         }
       }

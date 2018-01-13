@@ -19,6 +19,7 @@ Now with this a few pieces of electronics and an arduino, they will be able to k
 ## Wiring
 
 - clock
+
 | Arduino | <=> | <=> | Clock |
 | :---: | :---: | :---: | :---: |
 | 5V | <= | => | 5V |
@@ -27,6 +28,7 @@ Now with this a few pieces of electronics and an arduino, they will be able to k
 | A5 | <= | => | SCL |
 
 - led
+
 | Arduino | <=> | <=> | LED |
 | :---: | :---: | :---: | :---: |
 | D13 | <= | 220Ω | . |
@@ -34,6 +36,7 @@ Now with this a few pieces of electronics and an arduino, they will be able to k
 | . | . | LED- | Gnd |
 
 - OLED Display
+
 | Arduino | <=> | <=> | OLED |
 | :---: | :---: | :---: | :---: |
 | 3.3V | <= | => | VCC |
@@ -42,8 +45,17 @@ Now with this a few pieces of electronics and an arduino, they will be able to k
 | A5 | <= | => | SCL |
 
 - Push Button (Normally open)
+
 | Arduino | <=> | <=> | Pushbutton |
 | :---: | :---: | :---: | :---: |
 | D4 | <= | => | + |
 | Gnd | <= | => | - |
 
+- HC-SR04
+
+| Arduino | <=> | <=> | HC-SR04 |
+| :---: | :---: | :---: | :---: |
+| 5V | <= | => | VCC |
+| D2 | <= | => | Trig |
+| D3 | <= | => | Echo |
+| Gnd | <= | => | Gnd |
