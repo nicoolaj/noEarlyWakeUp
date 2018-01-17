@@ -10,7 +10,7 @@
 #include "Adafruit_SSD1306.h"
 #include "DS1307.h"
 
-#define TIME_SCREEN_ON 7
+#define TIME_SCREEN_ON 6
 #define DISTANCE_MINIMUM 150 // distance in mm
 
 #define BOARDLED 13
@@ -29,6 +29,26 @@ const unsigned long MEASURE_TIMEOUT = 25000UL; // 25ms = ~8m à 340m/s
 
 /* Vitesse du son dans l'air en mm/us */
 const float SOUND_SPEED = 340.0 / 1000;
+
+#define LOGO16_GLCD_HEIGHT 16 
+#define LOGO16_GLCD_WIDTH  16 
+static const unsigned char PROGMEM logo16_glcd_bmp[] =
+{ B00000000, B11000000,
+  B00000001, B11000000,
+  B00000001, B11000000,
+  B00000011, B11100000,
+  B11110011, B11100000,
+  B11111110, B11111000,
+  B01111110, B11111111,
+  B00110011, B10011111,
+  B00011111, B11111100,
+  B00001101, B01110000,
+  B00011011, B10100000,
+  B00111111, B11100000,
+  B00111111, B11110000,
+  B01111100, B11110000,
+  B01110000, B01110000,
+  B00000000, B00110000 };
 
 
 /* Rétro-compatibilité avec Arduino 1.x et antérieur */
@@ -123,30 +143,51 @@ void blinkSequence(int ledPin){
 
 void oled_night(){
   display.clearDisplay();
+  display.drawBitmap(30, 16,  logo16_glcd_bmp, 16, 16, 1);
+  display.drawBitmap(70, 10,  logo16_glcd_bmp, 16, 16, 1);
+  display.drawBitmap(100, 16,  logo16_glcd_bmp, 16, 16, 1);
   display.display();
 }
 
-void oled_initUp(int color){
+void oled_initUp(int color, int ledPin){
+  int ledState=LOW;
   for(int16_t i=0; i<display.width(); i++){
     display.drawLine(i, 0, i, 7, color);
     display.display();
     //delay(1);
+    if(i%5 == 0){
+      ledState = (ledState?LOW:HIGH);
+      digitalWrite(ledPin, ledState);
+    }
   }
+  digitalWrite(ledPin, LOW);
 }
 
-void oled_initDown1(int color){
+void oled_initDown1(int color, int ledPin){
+  int ledState=LOW;
   for(int16_t i=display.height(); i>7; i--){
     display.drawLine(0, i, display.width(), i, color);
     display.display();
     //delay(1);
+    if(i%5 == 0){
+      ledState = (ledState?LOW:HIGH);
+      digitalWrite(ledPin, ledState);
+    }
   }
+  digitalWrite(ledPin, LOW);
 }
-void oled_initDown2(int color){
+void oled_initDown2(int color, int ledPin){
+  int ledState=LOW;
   for(int16_t i=8; i<display.height(); i++){
     display.drawLine(0, i, display.width(), i, color);
     display.display();
     //delay(1);
+    if(i%5 == 0){
+      ledState = (ledState?LOW:HIGH);
+      digitalWrite(ledPin, ledState);
+    }
   }
+  digitalWrite(ledPin, LOW);
 }
 
 void oled_sunrise(void) {
@@ -217,15 +258,16 @@ void setup() {
 
   //drawClockFace();
   
-  oled_initUp(WHITE);
-  oled_initDown1(WHITE);
-  oled_initDown1(BLACK);
-  oled_initDown2(WHITE);
-  oled_initDown2(BLACK);
-  oled_initUp(BLACK);
-  
+  oled_initUp(WHITE,BOARDLED);
+  oled_initDown1(WHITE,EXTERNLED);
+  oled_initDown1(BLACK,EXTERNLED);
+  oled_initDown2(WHITE,EXTERNLED);
+  oled_initDown2(BLACK,EXTERNLED);
+  oled_initUp(BLACK,BOARDLED);
+  /*  
   blinkSequence(BOARDLED);
   blinkSequence(EXTERNLED);
+  */
 }
 
 /* Retourne l'heure et les minutes au format (100*Heures + Minutes) */
@@ -233,13 +275,13 @@ int wakeUpTimeByDay(int dayOfWeek){
     switch(dayOfWeek){
     case 0://Dimanche
     case 7:
-      return 730;
+      return 720;
       break;
     case 1://Lundi
       return 645;
       break;
     case 2://Mardi
-      return 710;
+      return 700;
       break;
     case 3://Mercredi
       return 645;
@@ -248,10 +290,10 @@ int wakeUpTimeByDay(int dayOfWeek){
       return 645;
       break;
     case 5://Vendredi
-      return 710;
+      return 700;
       break;
     case 6://Samedi
-      return 730;
+      return 720;
       break;
   }
 }
@@ -260,7 +302,7 @@ int isWakeUpAllowed(int dayOfWeek, int nowHour, int nowMinute){
   int strangeFormat=(100*nowHour)+nowMinute;
   Serial.println(strangeFormat);
 
-  if(strangeFormat > 1900){
+  if(strangeFormat > 2000){
     Serial.println(F("Il est trop tard pour allumer"));
     return 0;
   }else if(strangeFormat < wakeUpTimeByDay(dayOfWeek)){
@@ -374,6 +416,7 @@ void loop() {
       if(stayScreenOn <= 0){
         stayScreenOn = 0;
         screenOff();
+        digitalWrite(BOARDLED,LOW);
       }else{
         stayScreenOn--;
         if(DEBUG >=3 ){
