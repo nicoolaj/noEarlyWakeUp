@@ -233,13 +233,13 @@ void setup() {
     }
     // Reconfiguration avec une date et heure en dure (pour l'exemple)
     now.seconds = 2;
-    now.minutes = 0;
+    now.minutes = 26;
     now.hours = 19; // 12h 0min 0sec
-    now.is_pm = 0; 
-    now.day_of_week = 1;
-    now.days = 11;
-    now.months = 12;
-    now.year = 17; // 1 dec 2016
+    now.is_pm = 1; 
+    now.day_of_week = 5;
+    now.days = 19;
+    now.months = 1;
+    now.year = 18; // 1 dec 2016
     adjust_current_datetime(&now);
   }
   if(DEBUG){
@@ -269,6 +269,85 @@ void setup() {
   blinkSequence(EXTERNLED);
   */
 }
+
+char* nomJour(int numJourSemaine){
+  switch(numJourSemaine){
+    case 0:
+    case 7:
+      return "Dimanche";
+    case 1:
+      return "Lundi";
+    case 2:
+      return "Mardi";
+    case 3:
+      return "Mercredi";
+    case 4:
+      return "Jeudi";
+    case 5:
+      return "Vendredi";
+    case 6:
+      return "Samedi";
+  }
+  return "";
+}
+
+char* nomMois(int numMois){
+  switch(numMois){
+    case 1:
+      return "Janvier";
+    case 2:
+      return "Fevrier";
+    case 3:
+      return "Mars";
+    case 4:
+      return "Avril";
+    case 5:
+      return "Mai";
+    case 6:
+      return "Juin";
+    case 7:
+      return "Juillet";
+    case 8:
+      return "Aout";
+    case 9:
+      return "Septembre";
+    case 10:
+      return "Ocotbre";
+    case 11:
+      return "Novembre";
+    case 12:
+      return "Décembre";
+  }
+  return "";
+}
+
+void showDigitalClock(){
+  DateTime_t now;
+  if (read_current_datetime(&now)) {
+    if(DEBUG){
+      Serial.println(F("L'horloge du module RTC n'est pas active !"));
+    }
+  }else{
+    char heure[5];
+    char jour[20];
+    sprintf(heure, "%02d:%02d", now.hours, now.minutes);
+    sprintf(jour, "%s %02d %s", nomJour(now.day_of_week), now.days, nomMois(now.months));
+
+    display.clearDisplay();
+
+    display.setTextSize(3);
+    display.setTextColor(WHITE);
+    display.setCursor(0,10);
+    display.print(heure);
+    display.setTextSize(1);
+    display.setTextColor(WHITE);
+    display.setCursor(0,0);
+    display.print(jour);
+    display.display();
+    delay(2000);
+  }
+}
+
 
 /* Retourne l'heure et les minutes au format (100*Heures + Minutes) */
 int wakeUpTimeByDay(int dayOfWeek){
@@ -393,12 +472,21 @@ int distance(){
 void loop() {
     int sensor1Value = distance();
     int sensor2Value = digitalRead(BUTTONPRESS);
-    if(DEBUG  >=3 ){
+    if(DEBUG){
       Serial.print(F("Button is "));
     }
-    if ((sensor2Value == LOW) || (sensor1Value == LOW)) {
+    if (sensor2Value == LOW){
+      Serial.println(F("Pressed"));
+      showDigitalClock();
+    }else{
+      Serial.println(F("Released"));
+    }
+    if(DEBUG){
+      Serial.print(F("Distance is "));
+    }
+    if (sensor1Value == LOW) {
       if(DEBUG){
-        Serial.print(F("Pressed"));
+        Serial.print(F("Between range"));
         digitalWrite(BOARDLED, LOW);   // turn the LED on (HIGH is the voltage level)
       }
       main_action();
@@ -407,7 +495,6 @@ void loop() {
         Serial.print(F(" stayScreenON set to "));
         Serial.println(TIME_SCREEN_ON);
       }
-
     } else {
       if(DEBUG){
         Serial.print(F("Released"));
