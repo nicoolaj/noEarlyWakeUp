@@ -63,6 +63,7 @@ static const unsigned char PROGMEM logo16_glcd_bmp[] =
 Adafruit_SSD1306 display(OLED_RESET);
 
 int stayScreenOn=0;
+int asAlreadyLooped=0;
 
 /** Fonction de conversion BCD -> decimal */
 byte bcd_to_decimal(byte bcd) {
@@ -264,6 +265,12 @@ void setup() {
   oled_initDown2(WHITE,EXTERNLED);
   oled_initDown2(BLACK,EXTERNLED);
   oled_initUp(BLACK,BOARDLED);
+  /*
+  showDigitalClock();
+  delay(1000);
+  */
+  screenOff();
+
   /*  
   blinkSequence(BOARDLED);
   blinkSequence(EXTERNLED);
@@ -312,7 +319,7 @@ char* nomMois(int numMois){
     case 9:
       return "Septembre";
     case 10:
-      return "Ocotbre";
+      return "Octobre";
     case 11:
       return "Novembre";
     case 12:
@@ -379,16 +386,24 @@ int wakeUpTimeByDay(int dayOfWeek){
 
 int isWakeUpAllowed(int dayOfWeek, int nowHour, int nowMinute){
   int strangeFormat=(100*nowHour)+nowMinute;
-  Serial.println(strangeFormat);
+  if(DEBUG){
+    Serial.println(strangeFormat);
+  }
 
   if(strangeFormat > 2000){
-    Serial.println(F("Il est trop tard pour allumer"));
+    if(DEBUG){
+      Serial.println(F("Il est trop tard pour allumer"));
+    }
     return 0;
   }else if(strangeFormat < wakeUpTimeByDay(dayOfWeek)){
-    Serial.println(F("Il est trop tot pour allumer"));
+    if(DEBUG){
+      Serial.println(F("Il est trop tot pour allumer"));
+    }
     return 0;
   }else{
-    Serial.println(F("Période authorisée de réveil"));
+    if(DEBUG){
+      Serial.println(F("Période authorisée de réveil"));
+    }
     return 1;
   }
 
@@ -409,6 +424,7 @@ void main_action(){
       Serial.println(F("L'horloge du module RTC n'est pas active !"));
     }
   }else{
+      if(DEBUG){
       /* Affiche la date et heure courante */
         Serial.print(F("Date : "));
         Serial.print(now.days);
@@ -422,6 +438,7 @@ void main_action(){
         Serial.print(now.minutes);
         Serial.print(F(":"));
         Serial.println(now.seconds);
+      }
       if(isWakeUpAllowed(now.day_of_week, now.hours, now.minutes)){
         digitalWrite(EXTERNLED, HIGH);   // turn the LED on (HIGH is the voltage level)
         oled_sunrise();
@@ -472,14 +489,23 @@ int distance(){
 void loop() {
     int sensor1Value = distance();
     int sensor2Value = digitalRead(BUTTONPRESS);
+    if(!asAlreadyLooped){
+      sensor2Value = LOW;
+      asAlreadyLooped++;
+    }
+    
     if(DEBUG){
       Serial.print(F("Button is "));
     }
     if (sensor2Value == LOW){
-      Serial.println(F("Pressed"));
+      if(DEBUG){
+        Serial.println(F("Pressed"));
+      }
       showDigitalClock();
     }else{
-      Serial.println(F("Released"));
+      if(DEBUG){
+        Serial.println(F("Released"));
+      }
     }
     if(DEBUG){
       Serial.print(F("Distance is "));
