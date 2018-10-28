@@ -109,7 +109,6 @@ byte read_current_datetime(DateTime_t *datetime) {
   return raw_seconds & 128;
 }
 
-
 /** 
  * Fonction ajustant l'heure et la date courante du module RTC à partir des informations fournies.
  * N.B. Redémarre l'horloge du module RTC si nécessaire.
@@ -144,16 +143,18 @@ void blinkSequence(int ledPin){
 
 void oled_night(){
   display.clearDisplay();
-  display.drawBitmap(30, 16,  logo16_glcd_bmp, 16, 16, 1);
+  display.drawBitmap(10, 10,  logo16_glcd_bmp, 16, 16, 1);
+  display.drawBitmap(40, 16,  logo16_glcd_bmp, 16, 16, 1);
   display.drawBitmap(70, 10,  logo16_glcd_bmp, 16, 16, 1);
   display.drawBitmap(100, 16,  logo16_glcd_bmp, 16, 16, 1);
+  display.startscrollleft(0x00, 0x04);
   display.display();
 }
 
 void oled_initUp(int color, int ledPin){
   int ledState=LOW;
-  for(int16_t i=0; i<display.width(); i++){
-    display.drawLine(i, 0, i, 7, color);
+  for(int16_t i=0; i<display.width(); i=i+2){
+    display.drawFastVLine(i, 0, 7, color),
     display.display();
     //delay(1);
     if(i%5 == 0){
@@ -167,7 +168,7 @@ void oled_initUp(int color, int ledPin){
 void oled_initDown1(int color, int ledPin){
   int ledState=LOW;
   for(int16_t i=display.height(); i>7; i--){
-    display.drawLine(0, i, display.width(), i, color);
+    display.drawFastHLine(0, i, display.width(), color);
     display.display();
     //delay(1);
     if(i%5 == 0){
@@ -180,7 +181,7 @@ void oled_initDown1(int color, int ledPin){
 void oled_initDown2(int color, int ledPin){
   int ledState=LOW;
   for(int16_t i=8; i<display.height(); i++){
-    display.drawLine(0, i, display.width(), i, color);
+    display.drawFastHLine(0, i, display.width(), color);
     display.display();
     //delay(1);
     if(i%5 == 0){
@@ -192,12 +193,25 @@ void oled_initDown2(int color, int ledPin){
 }
 
 void oled_sunrise(void) {
+  boolean switchDisplay;
   for (int16_t i=0; i<display.width()/2; i+=3) {
     display.drawCircle(display.width()/2, 7, i, WHITE);
+    display.fillRect(0, 8, display.width(), display.height(), 0);
+    display.display();
+    delay(5);
   }
-  display.fillRect(0, 8, display.width(), display.height(), 0);
-  display.display();
-  //delay(1000);
+  /*
+  for(int16_t i=0;i<20;i++){
+    if((i%2)==0){
+      switchDisplay=true;
+    }else{
+      switchDisplay=false;
+    }
+    display.invertDisplay(switchDisplay);
+    display.fillRect(0, 8, display.width(), display.height(), WHITE);
+    delay(500);
+  }
+  */
 }
 
 void screenOff(){
@@ -215,14 +229,16 @@ void setup() {
   digitalWrite(TRIGGER_PIN, LOW); // La broche TRIGGER doit être à LOW au repos
   pinMode(ECHO_PIN, INPUT);
 
-
   /* Initialise le port série */
   if(DEBUG){
     Serial.begin(9600);
+    Serial.print(F("la valeur de arduino est : "));
+    Serial.print(ARDUINO);
+    Serial.println(F("."));
   }
   /* Initialise le port I2C */
   Wire.begin();
-
+  
   /* Compter 2 secondes pour initialiser l'horloge suite à un reset */
   
   /* Vérifie si le module RTC est initialisé */
@@ -260,19 +276,17 @@ void setup() {
   // Clear the buffer.
   screenOff();
 
-  //showDigitalClock();
-  //delay(5000);
-  //drawClockFace();
-  
+  oled_sunrise();
+  delay(10000);
+  /*
   oled_initUp(WHITE,BOARDLED);
   oled_initDown1(WHITE,EXTERNLED);
+  display.dim(true);
   oled_initDown1(BLACK,EXTERNLED);
   oled_initDown2(WHITE,EXTERNLED);
   oled_initDown2(BLACK,EXTERNLED);
+  display.dim(false);
   oled_initUp(BLACK,BOARDLED);
-  /*
-  showDigitalClock();
-  delay(1000);
   */
   screenOff();
 
@@ -415,9 +429,106 @@ int isWakeUpAllowed(int dayOfWeek, int nowHour, int nowMinute){
 
 }
 
-void drawClockFace(){
-  display.drawCircle(display.width()/2, ((display.height()-10)/2)+8, 12, WHITE);
+void drawMark(int h){
+  // Source : http://www.rinkydinkelectronics.com
+  float x1, y1, x2, y2;
+  int decalCenterX = 45;
+
+  h=h*30;
+  h=h+270;
+  
+  x1=19*cos(h*0.0175) + decalCenterX;
+  y1=19*sin(h*0.0175);
+  x2=16*cos(h*0.0175) + decalCenterX;
+  y2=16*sin(h*0.0175);
+  
+  display.drawLine(x1+(display.width()/2), y1+(display.height()/2), x2+(display.width()/2), y2+(display.height()/2),WHITE);
+}
+void drawMin(int m){
+  // Source : http://www.rinkydinkelectronics.com
+  float x1, y1, x2, y2, x3, y3, x4, y4;
+  int decalCenterX = 45;
+
+  m=m*6;
+  m=m+270;
+  
+  x1=25*cos(m*0.0175) + decalCenterX;
+  y1=25*sin(m*0.0175);
+  x2=3*cos(m*0.0175) + decalCenterX;
+  y2=3*sin(m*0.0175);
+  x3=10*cos((m+8)*0.0175) + decalCenterX;
+  y3=10*sin((m+8)*0.0175);
+  x4=10*cos((m-8)*0.0175) + decalCenterX;
+  y4=10*sin((m-8)*0.0175);
+  
+  display.drawLine(x1+(display.width()/2), y1+(display.height()/2), x3+(display.width()/2), y3+(display.height()/2),WHITE);
+  display.drawLine(x3+(display.width()/2), y3+(display.height()/2), x2+(display.width()/2), y2+(display.height()/2),WHITE);
+  display.drawLine(x2+(display.width()/2), y2+(display.height()/2), x4+(display.width()/2), y4+(display.height()/2),WHITE);
+  display.drawLine(x4+(display.width()/2), y4+(display.height()/2), x1+(display.width()/2), y1+(display.height()/2),WHITE);
+}
+void drawHour(int h, int m){
+  // Source : http://www.rinkydinkelectronics.com
+  float x1, y1, x2, y2, x3, y3, x4, y4, x5, y5;
+  int decalCenterX = 45;
+
+  h=(h*30)+(m/2);
+  h=h+270;
+  
+  x1=20*cos(h*0.0175) + decalCenterX;
+  y1=20*sin(h*0.0175);
+  x2=3*cos(h*0.0175) + decalCenterX;
+  y2=3*sin(h*0.0175);
+  x3=8*cos((h+12)*0.0175) + decalCenterX;
+  y3=8*sin((h+12)*0.0175);
+  x4=8*cos((h-12)*0.0175) + decalCenterX;
+  y4=8*sin((h-12)*0.0175);
+  x5=15*cos((h-12)*0.0175) + decalCenterX;
+  y5=15*sin((h-12)*0.0175);
+
+
+  display.drawLine(x1+(display.width()/2), y1+(display.height()/2), x3+(display.width()/2), y3+(display.height()/2),WHITE);
+  display.drawLine(x3+(display.width()/2), y3+(display.height()/2), x2+(display.width()/2), y2+(display.height()/2),WHITE);
+  display.drawLine(x2+(display.width()/2), y2+(display.height()/2), x4+(display.width()/2), y4+(display.height()/2),WHITE);
+  display.drawLine(x4+(display.width()/2), y4+(display.height()/2), x1+(display.width()/2), y1+(display.height()/2),WHITE);
+  //display.drawLine(x2+(display.width()/2), y2+(display.height()/2), x5+(display.width()/2), y5+(display.height()/2),WHITE);
+  //display.drawLine(x5+(display.width()/2), y5+(display.height()/2), x1+(display.width()/2), y1+(display.height()/2),WHITE);
+}
+void drawClockFace(int hour, int minute){
+  // Source : http://www.rinkydinkelectronics.com
+  display.stopscroll();
+  for (int i=0; i<2; i++)
+  {
+    display.drawCircle((display.width()/2)+45, (display.height()/2), (display.height()/2)-i, WHITE);
+  }
+  /*
+  // Center
+  for (int i=0; i<3; i++)
+  {
+    display.drawCircle((display.width()/2), (display.height()/2), i, WHITE);
+  }
+  */
+  // Draw a small mark for every hour
+  for (int i=1; i<12; i++)
+  {
+    drawMark(i);
+  }
+
+  //drawMin(minute);
+  drawHour(hour, minute);
+
+  display.setTextSize(3);
+  display.setTextColor(WHITE);
+  display.setCursor(10,10);
+  display.print(hour);
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+  display.setCursor(55,17);
+  display.print(minute);
+
   display.display();
+  delay(5000);
+  //display.drawCircle(display.width()/2, ((display.height()-10)/2)+8, 12, WHITE);
+  //display.display();
   //delay(3000);
 }
 
@@ -446,11 +557,15 @@ void main_action(){
       }
       if(isWakeUpAllowed(now.day_of_week, now.hours, now.minutes)){
         digitalWrite(EXTERNLED, HIGH);   // turn the LED on (HIGH is the voltage level)
+        display.dim(false); //Do not dim the display
         oled_sunrise();
       }else{
         digitalWrite(EXTERNLED, LOW);    // turn the LED off by making the voltage LOW
+        display.dim(true); //Dim the display
         oled_night();
-        //drawClockFace();
+        delay(4500); 
+        screenOff();
+        drawClockFace(now.hours,now.minutes);
       }
   }
   
@@ -485,8 +600,6 @@ int distance(){
       Serial.println(distance_mm);    
     }
   }
-  /* Délai d'attente pour éviter d'afficher trop de résultats à la seconde */
-  //delay(500);
   return(retour);
 }
 
@@ -518,7 +631,7 @@ void loop() {
     if (sensor1Value == LOW) {
       if(DEBUG){
         Serial.print(F("Between range"));
-        digitalWrite(BOARDLED, LOW);   // turn the LED on (HIGH is the voltage level)
+        digitalWrite(BOARDLED, LOW);
       }
       main_action();
       stayScreenOn = TIME_SCREEN_ON;
