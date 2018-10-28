@@ -5,7 +5,7 @@
  #include "Arduino.h"
  #include "Print.h"
 #else
- #include "WProgram.h"
+ #include "Arduino.h"
 #endif
 #include "gfxfont.h"
 

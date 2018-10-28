@@ -22,7 +22,7 @@ All text above, and the splash screen must be included in any redistribution
  #include "Arduino.h"
  #define WIRE_WRITE Wire.write
 #else
- #include "WProgram.h"
+ #include "Arduino.h"
   #define WIRE_WRITE Wire.send
 #endif
 
