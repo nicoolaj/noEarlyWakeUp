@@ -8,7 +8,7 @@
 #include <Wire.h>
 #include "Adafruit_GFX.h"
 #include "Adafruit_SSD1306.h"
-#include "DS1307.h"
+#include "./DS1307.h"
 
 #define TIME_SCREEN_ON 6
 #define DISTANCE_MINIMUM 150 // distance in mm
@@ -227,6 +227,9 @@ void setup() {
   
   /* Vérifie si le module RTC est initialisé */
   DateTime_t now;
+  /*
+   * Switch the 2 IF condition in order to set the clock
+   */
   if (read_current_datetime(&now)) {
   //if (1) {
     if(DEBUG){
@@ -234,12 +237,12 @@ void setup() {
     }
     // Reconfiguration avec une date et heure en dure (pour l'exemple)
     now.seconds = 2;
-    now.minutes = 26;
+    now.minutes = 31;
     now.hours = 19; // 12h 0min 0sec
     now.is_pm = 1; 
-    now.day_of_week = 5;
-    now.days = 19;
-    now.months = 1;
+    now.day_of_week = 0;
+    now.days = 28;
+    now.months = 10;
     now.year = 18; // 1 dec 2016
     adjust_current_datetime(&now);
   }
@@ -257,6 +260,8 @@ void setup() {
   // Clear the buffer.
   screenOff();
 
+  //showDigitalClock();
+  //delay(5000);
   //drawClockFace();
   
   oled_initUp(WHITE,BOARDLED);
