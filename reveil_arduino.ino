@@ -286,51 +286,51 @@ char* nomJour(int numJourSemaine){
   switch(numJourSemaine){
     case 0:
     case 7:
-      return "Dimanche";
+      return (char*) "Dimanche";
     case 1:
-      return "Lundi";
+      return (char*) "Lundi";
     case 2:
-      return "Mardi";
+      return (char*) "Mardi";
     case 3:
-      return "Mercredi";
+      return (char*) "Mercredi";
     case 4:
-      return "Jeudi";
+      return (char*) "Jeudi";
     case 5:
-      return "Vendredi";
+      return (char*) "Vendredi";
     case 6:
-      return "Samedi";
+      return (char*) "Samedi";
   }
-  return "";
+  return (char*) "";
 }
 
 char* nomMois(int numMois){
   switch(numMois){
     case 1:
-      return "Janvier";
+      return (char*) "Janvier";
     case 2:
-      return "Fevrier";
+      return (char*) "Fevrier";
     case 3:
-      return "Mars";
+      return (char*) "Mars";
     case 4:
-      return "Avril";
+      return (char*) "Avril";
     case 5:
-      return "Mai";
+      return (char*) "Mai";
     case 6:
-      return "Juin";
+      return (char*) "Juin";
     case 7:
-      return "Juillet";
+      return (char*) "Juillet";
     case 8:
-      return "Aout";
+      return (char*) "Aout";
     case 9:
-      return "Septembre";
+      return (char*) "Septembre";
     case 10:
-      return "Octobre";
+      return (char*) "Octobre";
     case 11:
-      return "Novembre";
+      return (char*) "Novembre";
     case 12:
-      return "Décembre";
+      return (char*) "Décembre";
   }
-  return "";
+  return (char*) "";
 }
 
 void showDigitalClock(){
@@ -349,7 +349,7 @@ void showDigitalClock(){
 
     display.setTextSize(3);
     display.setTextColor(WHITE);
-    display.setCursor(0,10);
+    display.setCursor(10,10);
     display.print(heure);
     display.setTextSize(1);
     display.setTextColor(WHITE);
